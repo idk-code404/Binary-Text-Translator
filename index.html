@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Binary ↔ Text Translator</title>
+  <style>
+    :root{
+      --bg:#f3f4f6;
+      --navy:#0b2545;
+      --accent:#1155cc;
+      --muted:#6b7280;
+      --radius:12px;
+      font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+    }
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--navy);
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
+      padding:20px;
+    }
+    main{
+      background:white;
+      border-radius:var(--radius);
+      box-shadow:0 4px 18px rgba(0,0,0,0.08);
+      max-width:800px;
+      width:100%;
+      padding:24px;
+    }
+    h1{margin-top:0;text-align:center;font-size:24px;}
+    label{font-weight:600;margin-top:12px;display:block;}
+    textarea{
+      width:100%;
+      min-height:130px;
+      padding:10px;
+      font-family:ui-monospace,monospace;
+      font-size:14px;
+      border:1px solid #ddd;
+      border-radius:8px;
+      resize:vertical;
+      box-sizing:border-box;
+    }
+    .controls, .footer-controls{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+    button{
+      background:var(--navy);
+      color:white;
+      border:none;
+      border-radius:8px;
+      padding:8px 12px;
+      font-weight:600;
+      cursor:pointer;
+    }
+    button.secondary{
+      background:transparent;
+      border:1px solid #ccc;
+      color:var(--navy);
+    }
+    .mode-toggle{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    select{
+      border-radius:8px;
+      padding:6px 10px;
+      border:1px solid #ccc;
+      font-size:14px;
+    }
+    .output{
+      background:#fafafa;
+      border:1px solid #ddd;
+      border-radius:8px;
+      padding:10px;
+      min-height:100px;
+      margin-top:10px;
+      word-break:break-word;
+      font-family:ui-monospace,monospace;
+    }
+    .error{
+      color:#7c0b0b;
+      background:#fff5f5;
+      border:1px solid rgba(124,11,11,0.1);
+      border-radius:8px;
+      padding:8px;
+      margin-top:8px;
+      display:none;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Binary ↔ Text Translator</h1>
+
+    <div class="mode-toggle">
+      <label for="modeSelect">Translate Mode:</label>
+      <select id="modeSelect">
+        <option value="binaryToText">Binary → English</option>
+        <option value="textToBinary">English → Binary</option>
+      </select>
+    </div>
+
+    <label for="inputField" id="inputLabel">Binary input (0s and 1s)</label>
+    <textarea id="inputField" placeholder="01001000 01100101 01101100 01101100 01101111"></textarea>
+
+    <div class="controls">
+      <button id="translateBtn">Translate</button>
+      <button id="clearBtn" class="secondary">Clear</button>
+      <button id="sampleBtn" class="secondary">Insert Example</button>
+    </div>
+
+    <div id="error" class="error"></div>
+
+    <label for="output">Output</label>
+    <div id="output" class="output">—</div>
+
+    <div class="footer-controls">
+      <button id="copyBtn">Copy</button>
+      <button id="downloadBtn" class="secondary">Download .txt</button>
+    </div>
+  </main>
+
+  <script>
+    const input = document.getElementById('inputField');
+    const translateBtn = document.getElementById('translateBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const sampleBtn = document.getElementById('sampleBtn');
+    const modeSelect = document.getElementById('modeSelect');
+    const output = document.getElementById('output');
+    const errorBox = document.getElementById('error');
+    const copyBtn = document.getElementById('copyBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const inputLabel = document.getElementById('inputLabel');
+
+    const SAMPLE_BINARY = "01001000 01100101 01101100 01101100 01101111";
+    const SAMPLE_TEXT = "Hello";
+
+    // Error helpers
+    const showError = msg => { errorBox.textContent = msg; errorBox.style.display='block'; };
+    const clearError = () => { errorBox.textContent = ''; errorBox.style.display='none'; };
+
+    // Binary → Text
+    function binaryToText(binStr){
+      clearError();
+      const clean = binStr.trim().replace(/\s+/g, ' ');
+      if(!clean) return '—';
+      if(/[^01\s]/.test(clean)){
+        showError('Binary input must contain only 0, 1, and spaces.');
+        return '—';
+      }
+      const bytes = clean.split(' ').filter(Boolean);
+      const chars = [];
+      for(let b of bytes){
+        if(b.length !== 8){
+          showError('Each binary group must be 8 bits long.');
+          return '—';
+        }
+        chars.push(String.fromCharCode(parseInt(b,2)));
+      }
+      return chars.join('');
+    }
+
+    // Text → Binary
+    function textToBinary(text){
+      clearError();
+      if(!text.trim()) return '—';
+      const binArray = [];
+      for(let ch of text){
+        const bin = ch.charCodeAt(0).toString(2).padStart(8,'0');
+        binArray.push(bin);
+      }
+      return binArray.join(' ');
+    }
+
+    // Event: translate
+    translateBtn.addEventListener('click',()=>{
+      const mode = modeSelect.value;
+      const val = input.value;
+      let result = '';
+      if(mode === 'binaryToText') result = binaryToText(val);
+      else result = textToBinary(val);
+      output.textContent = result;
+    });
+
+    // Mode switch updates placeholder & label
+    modeSelect.addEventListener('change', ()=>{
+      clearError();
+      output.textContent = '—';
+      input.value = '';
+      if(modeSelect.value === 'binaryToText'){
+        inputLabel.textContent = 'Binary input (0s and 1s)';
+        input.placeholder = SAMPLE_BINARY;
+      } else {
+        inputLabel.textContent = 'English text input';
+        input.placeholder = SAMPLE_TEXT;
+      }
+    });
+
+    // Buttons
+    clearBtn.addEventListener('click',()=>{
+      input.value='';output.textContent='—';clearError();
+    });
+
+    sampleBtn.addEventListener('click',()=>{
+      if(modeSelect.value==='binaryToText') input.value = SAMPLE_BINARY;
+      else input.value = SAMPLE_TEXT;
+    });
+
+    copyBtn.addEventListener('click', async ()=>{
+      const text = output.textContent;
+      if(text==='—' || !text) return;
+      await navigator.clipboard.writeText(text);
+      output.textContent = text + "  ✅ Copied!";
+      setTimeout(()=>output.textContent=text,1500);
+    });
+
+    downloadBtn.addEventListener('click',()=>{
+      const text = output.textContent;
+      if(text==='—' || !text) return;
+      const blob = new Blob([text],{type:'text/plain'});
+      const url = URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;
+      a.download='translation.txt';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
