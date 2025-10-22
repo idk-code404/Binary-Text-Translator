@@ -25,6 +25,6 @@ After cloning, open `index.html` directly in your browser.
 
 Example:
 ```bash
-git clone https://github.com/yourusername/binary-text-translator.git
+git clone https://github.com/idk-code404/binary-text-translator.git
 cd binary-text-translator
 open index.html
